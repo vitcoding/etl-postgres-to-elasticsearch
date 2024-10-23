@@ -7,8 +7,8 @@ from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
 from config import TABLES, dsl, logger
-from get_data import SQLiteLoader
-from load_data import PostgresSaver
+from get_data import PostgresGetter
+from load_data import ESSaver
 from tests.check_consistency.test import test_transfer
 
 
@@ -17,20 +17,20 @@ def load_from_sqlite(
 ) -> bool:
     """Основной метод загрузки данных из SQLite в Postgres"""
 
-    sqlite_loader = SQLiteLoader(sqllite_connection)
-    postgres_saver = PostgresSaver(pg_connection)
+    postgres_getter = PostgresGetter(pg_connection)
+    # es_saver = ESSaver(pg_connection)
     errors_total = 0
 
     for table in TABLES:
-        data = sqlite_loader.load_data(table)
-        postgres_saver.save_all_data(table, data)
+        data = postgres_getter.load_data(table)
+        # es_saver.save_all_data(table, data)
 
-    errors_total += sqlite_loader.errors + postgres_saver.errors
-    logger.debug("Количество ошибок 'sqlite_loader': %s", sqlite_loader.errors)
-    logger.debug(
-        "Количество ошибок 'postgres_saver': %s\n", postgres_saver.errors
-    )
-    logger.info("Всего ошибок: %s\n", errors_total)
+    # errors_total += postgres_getter.errors + es_saver.errors
+    # logger.debug("Количество ошибок 'sqlite_loader': %s", postgres_getter.errors)
+    # logger.debug(
+    #     "Количество ошибок 'postgres_saver': %s\n", es_saver.errors
+    # )
+    # logger.info("Всего ошибок: %s\n", errors_total)
 
     if errors_total > 0:
         return False
@@ -39,11 +39,13 @@ def load_from_sqlite(
 
 if __name__ == "__main__":
 
-    with closing(sqlite3.connect("db.sqlite")) as sqlite_connection, closing(
+    with closing(
         psycopg.connect(
             **dsl, row_factory=dict_row, cursor_factory=ClientCursor
         )
-    ) as pg_connection:
+    ) as pg_connection, closing(
+        sqlite3.connect("db.sqlite")
+    ) as sqlite_connection:
         logger.info("Программа запущена\n")
         start_time = perf_counter()
 
@@ -51,7 +53,7 @@ if __name__ == "__main__":
 
         start_tests_time = perf_counter()
 
-        test_transfer(sqlite_connection, pg_connection, TABLES)
+        # test_transfer(sqlite_connection, pg_connection, TABLES)
 
         end_time = perf_counter()
         result = (

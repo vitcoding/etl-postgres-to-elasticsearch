@@ -10,7 +10,7 @@ from config import DB_SCHEMA, TABLE_DATA, logger
 from dataclasses_ import Filmwork, Genre, GenreFilmwork, Person, PersonFilmwork
 
 
-class PostgresSaver:
+class ESSaver:
     def __init__(
         self,
         pg_connection: psycopg.Connection,

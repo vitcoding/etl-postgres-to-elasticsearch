@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from dateutil.parser import parse
+# from dateutil.parser import parse
 
 
 def validate_data(row: dict[str, Any]) -> dict[str, Any]:
@@ -13,17 +13,17 @@ def validate_data(row: dict[str, Any]) -> dict[str, Any]:
             case "id", "film_work_id", "genre_id", "person_id":
                 if isinstance(value, str):
                     value = UUID(value)
-            case "creation_date":
-                if isinstance(value, str):
-                    value = parse(value)
-            case "created_at":
-                key = "created"
-                if isinstance(value, str):
-                    value = parse(value)
-            case "updated_at":
-                key = "modified"
-                if isinstance(value, str):
-                    value = parse(value)
+            # case "creation_date":
+            #     if isinstance(value, str):
+            #         value = parse(value)
+            # case "created_at":
+            #     key = "created"
+            #     if isinstance(value, str):
+            #         value = parse(value)
+            # case "updated_at":
+            #     key = "modified"
+            #     if isinstance(value, str):
+            #         value = parse(value)
             case _:
                 key = key
                 value = value

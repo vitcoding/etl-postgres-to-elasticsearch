@@ -7,7 +7,7 @@ from dataclasses_ import Filmwork, Genre, GenreFilmwork, Person, PersonFilmwork
 from validate import validate_data
 
 
-class SQLiteLoader:
+class PostgresGetter:
     def __init__(
         self,
         sqlite_connection: sqlite3.Connection,

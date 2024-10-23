@@ -26,7 +26,6 @@ class Filmwork:
     title: str
     description: str
     creation_date: date
-    file_path: str
     rating: float
     type: str
     created: datetime
