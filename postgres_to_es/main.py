@@ -6,10 +6,9 @@ import psycopg
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
-from config import TABLES, dsl, logger
+from config import dsl, logger
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
-from tests.check_consistency.test import test_transfer
 
 
 # typing to change
@@ -22,15 +21,19 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
 
     counter = 0
     # for table in TABLES:
-    for table in ("film_work",):
-        data = postgres_extractor.extract_data(table)
-        elasticsearch_loader.load_data(table, data)
+    # for table in ("film_work",):
+    data = postgres_extractor.extract_data()
+    elasticsearch_loader.load_data(data)
 
-    #     for line in data:
-    #         logger.info("%s\n", line)
-    #         counter += 1
-    #     logger.info("Counter: %s\n\n", counter)
-    #     # es_saver.save_all_data(table, data)
+    # # for debug only
+    # ###
+    # for line in data:
+    #     # logger.info("%s\n", line)
+    #     logger.info("fw: \n%s\ntype(fw): \n%s", line[0], type(line[0]))
+    #     counter += 1
+
+    # logger.info("Counter: %s\n\n", counter)
+    # ###
 
     # es_loader = ElasticsearchLoader()
     # es_loader.load_data()
@@ -62,8 +65,6 @@ if __name__ == "__main__":
         transfer = load_from_postgres(pg_connection)
 
         start_tests_time = perf_counter()
-
-        # test_transfer(sqlite_connection, pg_connection, TABLES)
 
         end_time = perf_counter()
         result = (

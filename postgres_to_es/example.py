@@ -73,10 +73,12 @@ operations = [
 ]
 # es.bulk(operations=operations)
 # result = helpers.bulk(es, actions=operations)
-result = helpers.bulk(es, actions=operations)
+###
+### to create example
+# result = helpers.bulk(es, actions=operations)
+# print(result)
 
 # print(dir(es))
-print(result)
 
 # After delete:
 # BulkIndexError(f"{len(errors)} document(s) failed to index.", errors)
@@ -119,3 +121,15 @@ print(result)
 # # Выполняем очистку индекса
 # result = es.delete_by_query(index=index_name, body=query)
 # print(result)
+
+
+#################
+#################
+#################
+index_name = "film_work"
+
+if es.indices.exists(index=index_name):
+    es.indices.delete(index=index_name)
+    print(f"Индекс {index_name} удален.")
+else:
+    print(f"Индекс {index_name} не существует.")

@@ -5,8 +5,10 @@ from typing import Generator
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
-from config import DB_SCHEMA, TABLE_DATA, logger
-from dataclasses_ import Filmwork, Genre, GenreFilmwork, Person, PersonFilmwork
+from config import DB_SCHEMA, logger
+from dataclasses_ import (
+    Filmwork,
+)  # , Genre, GenreFilmwork, Person, PersonFilmwork
 
 
 class ElasticsearchLoader:
@@ -22,14 +24,14 @@ class ElasticsearchLoader:
 
     def load_data(
         self,
-        table,
+        # table,
         data,
     ):
         """Метод загрузки данных в ElasticSearch"""
 
         es_client = Elasticsearch("http://127.0.0.1:9200/")
 
-        index_name = table
+        index_name = "movies"
 
         actions = []
         for sources in data:
@@ -38,7 +40,7 @@ class ElasticsearchLoader:
                 action = {
                     "_op_type": "index",
                     "_index": index_name,
-                    "_id": source["id"],
+                    "_id": source["fw_id"],
                     "_source": source,
                 }
                 actions.append(action)

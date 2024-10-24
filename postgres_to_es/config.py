@@ -3,7 +3,9 @@ import os
 
 from dotenv import load_dotenv
 
-from dataclasses_ import Filmwork, Genre, GenreFilmwork, Person, PersonFilmwork
+from dataclasses_ import (
+    Filmwork,
+)  # , Genre, GenreFilmwork, Person, PersonFilmwork
 
 load_dotenv()
 dsl = {
@@ -24,13 +26,13 @@ TABLES = (
     "person_film_work",
 )
 
-TABLE_DATA = {
-    "film_work": Filmwork,
-    "genre": Genre,
-    "person": Person,
-    "genre_film_work": GenreFilmwork,
-    "person_film_work": PersonFilmwork,
-}
+# TABLE_DATA = {
+#     "film_work": Filmwork,
+#     "genre": Genre,
+#     "person": Person,
+#     "genre_film_work": GenreFilmwork,
+#     "person_film_work": PersonFilmwork,
+# }
 
 DB_SCHEMA = {
     "postgres": "content.",
