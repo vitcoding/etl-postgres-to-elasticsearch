@@ -3,9 +3,9 @@ import os
 
 from dotenv import load_dotenv
 
-from dataclasses_ import (
-    Filmwork,
-)  # , Genre, GenreFilmwork, Person, PersonFilmwork
+from dataclasses_ import Filmwork
+
+# , Genre, GenreFilmwork, Person, PersonFilmwork
 
 load_dotenv()
 dsl = {
@@ -41,7 +41,7 @@ DB_SCHEMA = {
     # "sqlite": "user.",
 }
 
-BATCH_SIZE = 700
+BATCH_SIZE = 500
 
 format_log = (
     "#%(levelname)-8s [%(asctime)s] - %(filename)s:"

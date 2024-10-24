@@ -6,9 +6,11 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
 
 from config import DB_SCHEMA, logger
-from dataclasses_ import (
-    Filmwork,
-)  # , Genre, GenreFilmwork, Person, PersonFilmwork
+from dataclasses_ import Filmwork
+from transform_data import TransformData
+
+from time import sleep
+import json
 
 
 class ElasticsearchLoader:
@@ -16,15 +18,11 @@ class ElasticsearchLoader:
         self,
         es_client=Elasticsearch("http://127.0.0.1:9200/"),
     ):
-        # self.es = Elasticsearch(
-        #     [{"host": "localhost", "port": 9200, "scheme": "https"}]
-        # )
         self.es_client = es_client
         self.counter = 0
 
     def load_data(
         self,
-        # table,
         data,
     ):
         """Метод загрузки данных в ElasticSearch"""
@@ -32,25 +30,29 @@ class ElasticsearchLoader:
         es_client = Elasticsearch("http://127.0.0.1:9200/")
 
         index_name = "movies"
+        transform = TransformData()
+        transformed_data = transform.transform_batch(data)
 
-        actions = []
-        for sources in data:
+        for sources in transformed_data:
+            actions = []
             for source in sources:
+                # print(f"{source}\n{type(source)}\n\n")
                 source = dict(source)
                 action = {
                     "_op_type": "index",
                     "_index": index_name,
-                    "_id": source["fw_id"],
+                    "_id": source["id"],
                     "_source": source,
                 }
                 actions.append(action)
 
-        bulk(es_client, actions=actions)
-
-        # sources = [dict(source) for source in sources]
-        # print(sources, type(sources), sep="\n")
-        # print(sources[0], type(sources[0]), sep="\n")
-
-        # bulk(self.es_client, actions=actions)
-
-        # logger.info("Таблица: %s\nДаные: \n%s\n", table, data)
+            try:
+                logger.debug("actions: \n\n%s", actions)
+                bulk(es_client, actions=actions)
+            except Exception as err:
+                logger.error(
+                    "Ошибка %s при загрузке данных: \n'%s'\n",
+                    type(err),
+                    err,
+                )
+            # sleep(2)

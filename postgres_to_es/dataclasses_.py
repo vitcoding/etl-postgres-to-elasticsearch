@@ -25,7 +25,7 @@ class PostInitMixin:
 
 @dataclass
 class Filmwork(PostInitMixin, IterMixin):
-    fw_id: UUID
+    id: UUID
     title: str
     description: str
     creation_date: date
@@ -34,10 +34,18 @@ class Filmwork(PostInitMixin, IterMixin):
     created: datetime
     modified: datetime
     g_id: UUID
-    genre: str
+    g_genre: str
+    g_description: str
+    g_created: datetime
+    g_modified: datetime
     p_id: UUID
-    person_name: str
-    person_role: str
+    p_person_name: str
+    p_person_role: str
+    p_created: datetime
+    p_modified: datetime
+
+    # genres_names
+    # actors_names и writers_names
 
     # genres: list = None
     # actors: list = None
@@ -53,7 +61,7 @@ if __name__ == "__main__":
     fw1 = Filmwork(
         **{
             # "fw_id": UUID("0d79e7f3-842f-4006-aa1c-f18e4e76abbe"),
-            "fw_id": "0d79e7f3-842f-4006-aa1c-f18e4e76abbe",
+            "id": "0d79e7f3-842f-4006-aa1c-f18e4e76abbe",
             "title": "A Star for Two",
             "description": "Teenage lovers in the 1940s are separated by World War II and then later reunited in the 1980s, but encounter new complications when they try to rekindle their relationship..",
             "rating": 7.2,
@@ -61,20 +69,28 @@ if __name__ == "__main__":
             "type": "movie",
             "created": datetime.datetime(2021, 6, 16, 20, 14, 9, 240214),
             "modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 240230),
-            # "p_id": UUID("11b36fce-4afb-430c-8f51-4ced0704007a"),
-            "p_id": "11b36fce-4afb-430c-8f51-4ced0704007a",
-            "person_name": "Anthony Quinn",
-            "person_role": "actor",
+            "p_id": UUID("11b36fce-4afb-430c-8f51-4ced0704007a"),
+            "p_person_name": "Anthony Quinn",
+            "p_person_role": "actor",
+            "p_created": datetime.datetime(2021, 6, 16, 20, 14, 9, 399211),
+            "p_modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 399227),
             "g_id": UUID("1cacff68-643e-4ddd-8f57-84b62538081a"),
-            "genre": "Drama",
+            "g_genre": "Drama",
+            "g_description": None,
+            "g_created": datetime.datetime(2021, 6, 16, 20, 14, 9, 309965),
+            "g_modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 309981),
         }
     )
 
     # print(fw1.__match_args__)
     print(fw1)
-    print(fw1.fw_id)
-    print(type(fw1.fw_id))
+    print(fw1.id)
+    print(type(fw1.id))
     print(dict(fw1))
+    print("\n")
+    for key, value in dict(fw1).items():
+        # print(f"{repr(key)} :   {value}")
+        print(f"{repr(key)}")
 
 
 # @dataclass

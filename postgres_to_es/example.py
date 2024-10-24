@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from uuid import UUID
 
 import elasticsearch
 from elasticsearch import helpers
@@ -126,10 +127,27 @@ operations = [
 #################
 #################
 #################
-index_name = "film_work"
+index_name = "movies"
 
 if es.indices.exists(index=index_name):
     es.indices.delete(index=index_name)
     print(f"Индекс {index_name} удален.")
 else:
     print(f"Индекс {index_name} не существует.")
+
+####################
+####################
+####################
+### get document
+
+index_name = "movies"
+
+# Идентификатор документа
+document_id = UUID("0d79e7f3-842f-4006-aa1c-f18e4e76abbe")
+
+# Получаем документ
+try:
+    result = es.get(index=index_name, id=document_id)
+    print("Документ:", result["_source"])
+except elasticsearch.exceptions.NotFoundError as e:
+    print(f"Документ с ID {document_id} не найден.")

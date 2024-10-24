@@ -20,8 +20,7 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
     errors_total = 0
 
     counter = 0
-    # for table in TABLES:
-    # for table in ("film_work",):
+
     data = postgres_extractor.extract_data()
     elasticsearch_loader.load_data(data)
 
@@ -30,6 +29,9 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
     # for line in data:
     #     # logger.info("%s\n", line)
     #     logger.info("fw: \n%s\ntype(fw): \n%s", line[0], type(line[0]))
+    #     # for key in line[0]:
+    #     #     print(key)
+    #     # print()
     #     counter += 1
 
     # logger.info("Counter: %s\n\n", counter)
@@ -56,9 +58,7 @@ if __name__ == "__main__":
         psycopg.connect(
             **dsl, row_factory=dict_row, cursor_factory=ClientCursor
         )
-    ) as pg_connection, closing(
-        sqlite3.connect("db.sqlite")
-    ) as sqlite_connection:
+    ) as pg_connection:
         logger.info("Программа запущена\n")
         start_time = perf_counter()
 

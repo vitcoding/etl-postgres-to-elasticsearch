@@ -9,7 +9,6 @@ def validate_data(row: dict[str, Any]) -> dict[str, Any]:
 
     transformed_row = {}
     for key, value in dict(row).items():
-        print(key, value)
         match key:
             case "id" | "fw_id" | "g_id" | "p_id":
                 if isinstance(value, str):
@@ -17,7 +16,14 @@ def validate_data(row: dict[str, Any]) -> dict[str, Any]:
             case "creation_date":
                 if isinstance(value, str):
                     value = parse(value)
-            case "created" | "modified":
+            case (
+                "created"
+                | "modified"
+                | "g_created"
+                | "g_modified"
+                | "p_created"
+                | "p_modified"
+            ):
                 if isinstance(value, str):
                     value = parse(value)
             case _:
