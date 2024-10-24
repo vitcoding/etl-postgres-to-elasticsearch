@@ -1,86 +1,54 @@
-import sqlite3
-from contextlib import closing
 from dataclasses import astuple
+from datetime import datetime, timezone
 from typing import Generator
 
-import psycopg
-from psycopg.rows import dict_row
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 
 from config import DB_SCHEMA, TABLE_DATA, logger
 from dataclasses_ import Filmwork, Genre, GenreFilmwork, Person, PersonFilmwork
 
 
-class ESSaver:
-    def __init__(
+class ElasticsearchLoader:
+    def init(
         self,
-        pg_connection: psycopg.Connection,
-        schema: str = DB_SCHEMA["postgres"],
-        table_data: dict[
-            str, Filmwork | Genre | Person | GenreFilmwork | PersonFilmwork
-        ] = TABLE_DATA,
+        es_client=Elasticsearch("http://127.0.0.1:9200/"),
     ):
-        self.pg_connection = pg_connection
-        self.schema = schema
-        self.table_data = table_data
-        self.errors = 0
+        # self.es = Elasticsearch(
+        #     [{"host": "localhost", "port": 9200, "scheme": "https"}]
+        # )
+        self.es_client = es_client
+        self.counter = 0
 
-    def save_all_data(
-        self, table: str, data: Generator[list[sqlite3.Row], None, None]
+    def load_data(
+        self,
+        table,
+        data,
     ):
-        """Метод загрузки данных в Postgres"""
+        """Метод загрузки данных в ElasticSearch"""
 
-        data_cls = self.table_data.get(table, None)
-        if data_cls is None:
-            self.errors += 1
-            return False
-        args_tuple = data_cls.__dict__["__match_args__"]
-        args_names = ", ".join(args_tuple)
-        args_values = ", ".join(["%s"] * len(args_tuple))
-        counter = 0
+        es_client = Elasticsearch("http://127.0.0.1:9200/")
 
-        with closing(
-            self.pg_connection.cursor(row_factory=dict_row)
-        ) as pg_cursor:
-            if not isinstance(data, Generator):
-                self.errors += 1
-                return False
+        index_name = table
 
-            logger.debug("Запущена загрузка данных для таблицы '%s'", table)
-            query = (
-                f"INSERT INTO {self.schema}{table} "
-                f"({args_names}) "
-                f"VALUES ({args_values}) "
-                f"ON CONFLICT (id) DO NOTHING"
-            )
-            logger.debug("Сформирован SQL запрос:\n'%s'", query)
+        actions = []
+        for sources in data:
+            for source in sources:
+                source = dict(source)
+                action = {
+                    "_op_type": "index",
+                    "_index": index_name,
+                    "_id": source["id"],
+                    "_source": source,
+                }
+                actions.append(action)
 
-            for batch in data:
-                counter += 1
+        bulk(es_client, actions=actions)
 
-                batch_as_tuples = [astuple(row) for row in batch]
-                try:
-                    pg_cursor.executemany(query, batch_as_tuples)
-                    logger.info(
-                        "Загружены данные: таблица '%s', партия %s",
-                        table,
-                        counter,
-                    )
-                except (
-                    psycopg.errors.UndefinedTable,
-                    psycopg.errors.UndefinedColumn,
-                    psycopg.errors.ForeignKeyViolation,
-                ) as err:
-                    logger.error(
-                        "Ошибка %s при загрузке данных "
-                        "(таблица '%s', партия %s):"
-                        "\n'%s'\n",
-                        type(err),
-                        table,
-                        counter,
-                        err,
-                    )
-                    self.errors += 1
+        # sources = [dict(source) for source in sources]
+        # print(sources, type(sources), sep="\n")
+        # print(sources[0], type(sources[0]), sep="\n")
 
-                self.pg_connection.commit()
+        # bulk(self.es_client, actions=actions)
 
-        return True
+        # logger.info("Таблица: %s\nДаные: \n%s\n", table, data)

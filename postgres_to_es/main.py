@@ -7,23 +7,33 @@ from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
 from config import TABLES, dsl, logger
-from get_data import PostgresGetter
-from load_data import ESSaver
+from get_data import PostgresExtractor
+from load_data import ElasticsearchLoader
 from tests.check_consistency.test import test_transfer
 
 
-def load_from_sqlite(
-    sqllite_connection: sqlite3.Connection, pg_connection: psycopg.Connection
-) -> bool:
-    """Основной метод загрузки данных из SQLite в Postgres"""
+# typing to change
+def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
+    """Основной метод загрузки данных из Postgres в ElasticSearch"""
 
-    postgres_getter = PostgresGetter(pg_connection)
-    # es_saver = ESSaver(pg_connection)
+    postgres_extractor = PostgresExtractor(pg_connection)
+    elasticsearch_loader = ElasticsearchLoader()
     errors_total = 0
 
-    for table in TABLES:
-        data = postgres_getter.load_data(table)
-        # es_saver.save_all_data(table, data)
+    counter = 0
+    # for table in TABLES:
+    for table in ("film_work",):
+        data = postgres_extractor.extract_data(table)
+        elasticsearch_loader.load_data(table, data)
+
+    #     for line in data:
+    #         logger.info("%s\n", line)
+    #         counter += 1
+    #     logger.info("Counter: %s\n\n", counter)
+    #     # es_saver.save_all_data(table, data)
+
+    # es_loader = ElasticsearchLoader()
+    # es_loader.load_data()
 
     # errors_total += postgres_getter.errors + es_saver.errors
     # logger.debug("Количество ошибок 'sqlite_loader': %s", postgres_getter.errors)
@@ -49,7 +59,7 @@ if __name__ == "__main__":
         logger.info("Программа запущена\n")
         start_time = perf_counter()
 
-        transfer = load_from_sqlite(sqlite_connection, pg_connection)
+        transfer = load_from_postgres(pg_connection)
 
         start_tests_time = perf_counter()
 
