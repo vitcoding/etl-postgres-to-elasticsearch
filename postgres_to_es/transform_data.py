@@ -1,85 +1,137 @@
-from dataclasses_ import Filmwork
+from config import logger
+from dataclasses_ import FilmworkExtract, FilmworkTransform
 
 
 class TransformData:
     def __init__(self):
         pass
 
+    @staticmethod
+    def add_values(values_base: list | str, value_add: list) -> dict:
+        if isinstance(values_base, list):
+            if len(value_add) > 0 and value_add[0] not in values_base:
+                values_base.extend(value_add)
+                new_values = sorted(values_base, key=lambda v: v["name"])
+            else:
+                new_values = values_base
+        if isinstance(values_base, str):
+            temp_list = [
+                element for element in values_base.split(", ") if element
+            ]
+            temp_list.extend(value_add)
+            new_values = ", ".join(sorted(list(set(temp_list))))
+        return new_values
+
+    @staticmethod
+    def aggregte_movie_dict(movie, transformed_row):
+        logger.debug(
+            "\nmovie: \n%s \n\ntransformed_row: \n%s\n", movie, transformed_row
+        )
+
+        for key in (
+            "genres",
+            "directors_names",
+            "actors_names",
+            "writers_names",
+        ):
+            if transformed_row[key]:
+                movie[key] = __class__.add_values(
+                    movie[key], transformed_row[key]
+                )
+            if key != "genres":
+                another_key = key.replace("_names", "")
+                movie[another_key] = __class__.add_values(
+                    movie[another_key], transformed_row[another_key]
+                )
+        # logger.info("\nmovie: \n%s\n", movie)
+
+        # if transformed_row["genres"]:
+        #     movie["genres"] = __class__.add_values(
+        #         movie["genres"], transformed_row["genres"]
+        #     )
+        # if transformed_row["directors_names"]:
+        #     movie["directors_names"] = __class__.add_values(
+        #         movie["directors_names"], transformed_row["directors_names"]
+        #     )
+        # if transformed_row["actors_names"]:
+        #     movie["actors_names"] = __class__.add_values(
+        #         movie["actors_names"], transformed_row["actors_names"]
+        #     )
+        # if transformed_row["writers_names"]:
+        #     movie["writers_names"] = __class__.add_values(
+        #         movie["writers_names"], transformed_row["writers_names"]
+        #     )
+        return movie
+
     def transform_batch(self, batch):
         transformed_batch = {}
 
         for data in batch:
+            data_example = data[0] if len(data) > 0 else None
+            logger.debug(
+                "\nПример данных для трансформации: \n%s\n", data_example
+            )
             for row in data:
                 transformed_row = self.transform_row(row)
                 row_id = transformed_row["id"]
 
                 if row_id not in transformed_batch:
-                    transformed_batch[row_id] = transformed_row
+                    temp_dict = {}
+                    logger.debug("\ntransformed_row: \n%s\n", transformed_row)
+                    for key, value in transformed_row.items():
+                        match key:
+                            case (
+                                "genres"
+                                | "directors_names"
+                                | "actors_names"
+                                | "writers_names"
+                            ):
+                                temp_dict[key] = ",".join(value)
+                            case _:
+                                temp_dict[key] = value
+                    transformed_batch[row_id] = temp_dict
                     continue
 
-                movie = transformed_batch[row_id]
-                # print(movie)
-                if transformed_row["genres"]:
-                    # print(list(transformed_row["genres"].keys())[0])
-                    genre_name = list(transformed_row["genres"].keys())[0]
-                    movie["genres"][genre_name] = transformed_row["genres"]
-                if transformed_row["actors"]:
-                    actor_name = list(transformed_row["actors"].keys())[0]
-                    movie["actors"][actor_name] = transformed_row["actors"]
-                if transformed_row["writers"]:
-                    writer_name = list(transformed_row["writers"].keys())[0]
-                    movie["writers"][writer_name] = transformed_row["writers"]
-                if transformed_row["directors"]:
-                    director_name = list(transformed_row["directors"].keys())[
-                        0
-                    ]
-                    movie["directors"][director_name] = transformed_row[
-                        "directors"
-                    ]
-                if transformed_row["other_roles"]:
-                    other_role_name = list(
-                        transformed_row["other_roles"].keys()
-                    )[0]
-                    movie["other_roles"][other_role_name] = transformed_row[
-                        "other_roles"
-                    ]
+                transformed_batch[row_id] = self.aggregte_movie_dict(
+                    transformed_batch[row_id], transformed_row
+                )
 
-                transformed_batch[row_id] = movie
-
-            transformed_data = list(transformed_batch.values())
-            yield transformed_data
-
-        # print(transformed_batch)
-
-        # transformed_data = list(transformed_batch.values())
-        # return transformed_data
+        transformed_data = list(transformed_batch.values())
+        yield transformed_data
 
     def transform_row(self, row):
-        row_dict = dict(Filmwork(**row))
+        row_dict = dict(FilmworkExtract(**row))
+        logger.debug("\nrow_dict: \n%s\n", row_dict)
 
-        movie, genre_dict, role_dict = {}, {}, {}
+        movie, role_dict = {}, {}
         for key, value in row_dict.items():
             if key.startswith("g_"):
-                genre_dict[key] = value
+                movie["genres"] = []
+                movie["genres"].append(value)
             elif key.startswith("p_"):
                 role_dict[key] = value
             else:
                 movie[key] = value
-        movie["genres"] = {genre_dict["g_genre"]: genre_dict}
-        # movie["genre_names"]
-        movie["actors"] = {}
-        movie["writers"] = {}
-        movie["directors"] = {}
-        movie["other_roles"] = {}
-        match role_dict["p_person_role"]:
-            case "actor":
-                movie["actors"] = {role_dict["p_person_name"]: role_dict}
-            case "writer":
-                movie["writers"] = {role_dict["p_person_name"]: role_dict}
-            case "direcor":
-                movie["directors"] = {role_dict["p_person_name"]: role_dict}
-            case _:
-                movie["other_roles"] = {role_dict["p_person_name"]: role_dict}
+        for key in (
+            "directors_names",
+            "actors_names",
+            "writers_names",
+            "directors",
+            "actors",
+            "writers",
+        ):
+            movie[key] = []
+
+        role = role_dict["p_role"]
+        if role not in ("director", "actor", "writer"):
+            logger.info("\nOther role!")
+        for person_role in ("director", "actor", "writer"):
+            if role == person_role:
+                movie[f"{role}s"].append(self.transform_role_dict(role_dict))
+                movie[f"{role}s_names"].append(role_dict["p_name"])
+
+        logger.debug("\nmovie: \n%s\n", movie)
+        movie = dict(FilmworkTransform(**movie))
 
         # print(row_dict)
         # print(movie, genre_dict, role_dict, sep="\n", end="\n\n")
@@ -88,39 +140,9 @@ class TransformData:
 
         return movie
 
-
-################
-
-# def transform_row(self, row):
-#     row_dict = dict(Filmwork(**row))
-
-#     movie, genre_dict, role_dict = {}, {}, {}
-#     for key, value in row_dict.items():
-#         if key.startswith("g_"):
-#             genre_dict[key] = value
-#         elif key.startswith("p_"):
-#             role_dict[key] = value
-#         else:
-#             movie[key] = value
-#     movie["genres"] = {genre_dict["g_genre"]: genre_dict}
-#     # movie["genre_names"]
-#     movie["actors"] = {}
-#     movie["writers"] = {}
-#     movie["directors"] = {}
-#     movie["other_roles"] = {}
-#     match role_dict["p_person_role"]:
-#         case "actor":
-#             movie["actors"] = {role_dict["p_person_name"]: role_dict}
-#         case "writer":
-#             movie["writers"] = {role_dict["p_person_name"]: role_dict}
-#         case "direcor":
-#             movie["directors"] = {role_dict["p_person_name"]: role_dict}
-#         case _:
-#             movie["other_roles"] = {role_dict["p_person_name"]: role_dict}
-
-#     # print(row_dict)
-#     # print(movie, genre_dict, role_dict, sep="\n", end="\n\n")
-#     # for key, value in movie.items():
-#     #     print(f"{key} :    {value}")
-
-#     return movie
+    @staticmethod
+    def transform_role_dict(role_dict):
+        new_role_dict = {}
+        new_role_dict["id"] = role_dict["p_id"]
+        new_role_dict["name"] = role_dict["p_name"]
+        return new_role_dict

@@ -5,7 +5,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from config import BATCH_SIZE, DB_SCHEMA, logger
-from dataclasses_ import Filmwork
+from dataclasses_ import FilmworkExtract
 from validate import validate_data
 
 
@@ -21,10 +21,45 @@ class PostgresExtractor:
         self.batch_size = batch_size
         self.errors = 0
 
+    def get_movies_ids(self):
+        self.pg_connection.row_factory = dict_row
+
+        with closing(
+            self.pg_connection.cursor(row_factory=dict_row)
+        ) as pg_cursor:
+            logger.debug("Запущено получение ids")
+
+            query = f"SELECT " f"id " f"FROM content.film_work;"
+            try:
+                pg_cursor.execute(query)
+            # except (sqlite3.OperationalError,) as err:
+            except Exception as err:
+                logger.error(
+                    "Ошибка %s при чтении данных: \n'%s'",
+                    type(err),
+                    err,
+                )
+                self.errors += 1
+
+            logger.debug("Сформирован SQL запрос:\n'%s'", query)
+
+            ids = pg_cursor.fetchmany(self.batch_size)
+            return ids
+
     def extract_data(
         self,
     ) -> Generator[tuple[str, list[dict_row]], None, None] | bool:
         """Метод получения данных из SQLite"""
+
+        ids = self.get_movies_ids()
+        logger.debug("IDs: \n%s\n", ids)
+
+        # query_ids_list = [repr(list(id.values())[0]) for id in ids[:30]]
+        query_ids_list = [repr(list(id.values())[0]) for id in ids]
+        logger.debug("IDs list for query: \n%s\n", query_ids_list)
+
+        query_ids = ", ".join(query_ids_list)
+        logger.info("IDs for query: \n%s\n", query_ids)
 
         self.pg_connection.row_factory = dict_row
 
@@ -36,31 +71,20 @@ class PostgresExtractor:
             query = (
                 f"SELECT "
                 f"fw.id, "
+                f"fw.rating as imdb_rating, "
+                f"g.name as g_genre ,"
                 f"fw.title, "
                 f"fw.description, "
-                f"fw.rating, "
-                f"fw.creation_date, "
-                f"fw.type, "
-                f"fw.created, "
-                f"fw.modified, "
                 f"p.id as p_id, "
-                f"p.full_name as p_person_name, "
-                f"pfw.role as p_person_role, "
-                f"p.created as p_created, "
-                f"p.modified as p_modified, "
-                f"g.id as g_id, "
-                f"g.name as g_genre ,"
-                f"g.description as g_description ,"
-                f"g.created as g_created, "
-                f"g.modified as g_modified "
+                f"p.full_name as p_name, "
+                f"pfw.role as p_role "
                 f"FROM content.film_work fw "
                 f"LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = fw.id "
                 f"LEFT JOIN content.person p ON p.id = pfw.person_id "
                 f"LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id "
-                f"LEFT JOIN content.genre g ON g.id = gfw.genre_id; "
-                # f"WHERE fwcontent.id IN (<id_всех_кинопроизводств>);"
+                f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
+                f"WHERE fw.id IN ({query_ids});"
             )
-            print(query, "\n")
             try:
                 pg_cursor.execute(query)
             # except (sqlite3.OperationalError,) as err:

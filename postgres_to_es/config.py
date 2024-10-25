@@ -3,7 +3,7 @@ import os
 
 from dotenv import load_dotenv
 
-from dataclasses_ import Filmwork
+from dataclasses_ import FilmworkExtract
 
 # , Genre, GenreFilmwork, Person, PersonFilmwork
 
@@ -41,7 +41,7 @@ DB_SCHEMA = {
     # "sqlite": "user.",
 }
 
-BATCH_SIZE = 500
+BATCH_SIZE = 1000
 
 format_log = (
     "#%(levelname)-8s [%(asctime)s] - %(filename)s:"

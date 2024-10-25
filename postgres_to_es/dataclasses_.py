@@ -24,61 +24,49 @@ class PostInitMixin:
 
 
 @dataclass
-class Filmwork(PostInitMixin, IterMixin):
+class FilmworkExtract(PostInitMixin, IterMixin):
     id: UUID
+    imdb_rating: float
+    g_genre: str
     title: str
     description: str
-    creation_date: date
-    rating: float
-    type: str
-    created: datetime
-    modified: datetime
-    g_id: UUID
-    g_genre: str
-    g_description: str
-    g_created: datetime
-    g_modified: datetime
     p_id: UUID
-    p_person_name: str
-    p_person_role: str
-    p_created: datetime
-    p_modified: datetime
+    p_name: str
+    p_role: str
 
-    # genres_names
-    # actors_names и writers_names
 
-    # genres: list = None
-    # actors: list = None
-    # directors: list = None
-    # writers: list = None
-    # other_roles: list = None
+@dataclass
+class FilmworkTransform(IterMixin):
+    id: UUID
+    imdb_rating: float
+    genres: list
+    title: str
+    description: str
+    directors_names: list
+    actors_names: list
+    writers_names: list
+    directors: list  # id, name
+    actors: list  # id, name
+    writers: list  # id, name
+
+    ### other_roles: dict = None
 
 
 ### for debug
 if __name__ == "__main__":
     import datetime
 
-    fw1 = Filmwork(
+    fw1 = FilmworkExtract(
         **{
-            # "fw_id": UUID("0d79e7f3-842f-4006-aa1c-f18e4e76abbe"),
-            "id": "0d79e7f3-842f-4006-aa1c-f18e4e76abbe",
-            "title": "A Star for Two",
-            "description": "Teenage lovers in the 1940s are separated by World War II and then later reunited in the 1980s, but encounter new complications when they try to rekindle their relationship..",
-            "rating": 7.2,
-            "creation_date": None,
-            "type": "movie",
-            "created": datetime.datetime(2021, 6, 16, 20, 14, 9, 240214),
-            "modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 240230),
-            "p_id": UUID("11b36fce-4afb-430c-8f51-4ced0704007a"),
-            "p_person_name": "Anthony Quinn",
-            "p_person_role": "actor",
-            "p_created": datetime.datetime(2021, 6, 16, 20, 14, 9, 399211),
-            "p_modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 399227),
-            "g_id": UUID("1cacff68-643e-4ddd-8f57-84b62538081a"),
-            "g_genre": "Drama",
-            "g_description": None,
-            "g_created": datetime.datetime(2021, 6, 16, 20, 14, 9, 309965),
-            "g_modified": datetime.datetime(2021, 6, 16, 20, 14, 9, 309981),
+            # "id": UUID("c9e1f6f0-4f1e-4a76-92ee-76c1942faa97"),
+            "id": "c9e1f6f0-4f1e-4a76-92ee-76c1942faa97",
+            "imdb_rating": 7.3,
+            "g_genre": "Action",
+            "title": "Star Trek: Discovery",
+            "description": "Ten years before Kirk, Spock, and the Enterprise, the USS Discovery discovers new worlds and lifeforms as one Starfleet officer learns to understand all things alien.",
+            "p_id": UUID("bd2a8ab8-a7bc-45cf-852b-d23cb1cf4b5d"),
+            "p_name": "Sonequa Martin-Green",
+            "p_role": "actor",
         }
     )
 

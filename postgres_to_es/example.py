@@ -123,6 +123,12 @@ operations = [
 # result = es.delete_by_query(index=index_name, body=query)
 # print(result)
 
+################
+### get mapping
+resp1 = es.indices.get_mapping(
+    index="movies",
+)
+print(resp1)
 
 #################
 #################
