@@ -41,7 +41,7 @@ DB_SCHEMA = {
     # "sqlite": "user.",
 }
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 200
 
 format_log = (
     "#%(levelname)-8s [%(asctime)s] - %(filename)s:"

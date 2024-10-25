@@ -27,14 +27,12 @@ class ElasticsearchLoader:
     ):
         """Метод загрузки данных в ElasticSearch"""
 
-        counter = 0
         es_client = Elasticsearch("http://127.0.0.1:9200/")
 
-        index_name = "movies"
         transform = TransformData()
-        transformed_data = transform.transform_batch(data)
 
         # Настройка схемы и создание индекса
+        index_name = "movies"
         settings = es_settings
         if not es_client.indices.exists(index=index_name):
             es_client.indices.create(index=index_name, body=settings)
@@ -42,14 +40,12 @@ class ElasticsearchLoader:
         else:
             logger.info("Индекс с именем '%s' уже существует.", index_name)
 
-        for sources in transformed_data:
-            inner_counter = 0
+        counter = 0
+        actions = []
+        for sources in data:
             actions = []
-            for source in sources:
-                # print(f"{source}\n{type(source)}\n\n")
-                source = dict(source)
-                # print(str(source), end="\n\n")
-                # source = json.loads(dict(source))
+            transformed_sorces = transform.transform_batch(sources)
+            for source in transformed_sorces:
                 action = {
                     "_op_type": "index",
                     "_index": index_name,
@@ -57,11 +53,9 @@ class ElasticsearchLoader:
                     "_source": source,
                 }
                 actions.append(action)
-                inner_counter += 1
+                counter += 1
             action_example = actions[0] if len(actions) > 0 else None
             logger.info("\nПример данных для загрузки: \n%s\n", action_example)
-            counter += inner_counter
-            logger.info("\nLoad counter:  %s\n", counter)
 
             try:
                 logger.debug("actions: \n\n%s", actions)
@@ -72,5 +66,7 @@ class ElasticsearchLoader:
                     type(err),
                     err,
                 )
-            # sleep(5)
-            # logger.info("Sleep...\n\n")
+
+            logger.info("\nLoad counter:  %s\n", counter)
+        # sleep(5)
+        # logger.info("Sleep...\n\n")
