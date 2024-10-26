@@ -1,28 +1,23 @@
-import sqlite3
 from contextlib import closing
-from time import perf_counter
+from datetime import datetime, timezone
+from time import perf_counter, sleep
 
 import psycopg
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
 from config import dsl, logger
+from data_state import JsonFileStorage, State
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
-from data_state import JsonFileStorage, State
-from datetime import datetime, timezone
-from time import sleep
 
 
-# typing to change
 def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
     """Основной метод загрузки данных из Postgres в ElasticSearch"""
 
     postgres_extractor = PostgresExtractor(pg_connection)
     elasticsearch_loader = ElasticsearchLoader()
     errors_total = 0
-
-    counter = 0
 
     storage = JsonFileStorage("./data/data_state.json")
     state = State(storage)
@@ -48,7 +43,7 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
     return True
 
 
-if __name__ == "__main__":
+def main():
     while True:
         with closing(
             psycopg.connect(
@@ -61,12 +56,18 @@ if __name__ == "__main__":
             transfer = load_from_postgres(pg_connection)
 
             end_time = perf_counter()
-            result = (
-                "В ходе переноса данных возникли ошибки.",
-                "🎉 Данные успешно перенесены !!!",
-            )[transfer]
-            logger.info(result)
+            # result = (
+            #     "В ходе переноса данных возникли ошибки.",
+            #     "🎉 Данные успешно перенесены !!!",
+            # )[transfer]
+            # logger.info(result)
 
         execute_time = end_time - start_time
-        logger.info("\nВремя выполнения программы: %s", execute_time)
+        logger.info(
+            "\n🎉 Время выполнения цикла программы: \n%s\n", execute_time
+        )
         sleep(10)
+
+
+if __name__ == "__main__":
+    main()

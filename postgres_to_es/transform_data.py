@@ -15,22 +15,12 @@ class TransformData:
             row_id = transformed_row["id"]
 
             if row_id not in transformed_batch:
-                temp_dict = {}
+
                 logger.debug(
                     "\nДанные после трансформации: \n%s\n", transformed_row
                 )
-                for key, value in transformed_row.items():
-                    match key:
-                        case (
-                            "genres"
-                            | "directors_names"
-                            | "actors_names"
-                            | "writers_names"
-                        ):
-                            temp_dict[key] = ",".join(value)
-                        case _:
-                            temp_dict[key] = value
-                transformed_batch[row_id] = temp_dict
+
+                transformed_batch[row_id] = transformed_row
                 continue
 
             transformed_batch[row_id] = self.aggregte_movie_dict(
@@ -108,16 +98,15 @@ class TransformData:
 
     @staticmethod
     def add_values(values_base: list | str, value_add: list) -> dict:
-        if isinstance(values_base, list):
-            if len(value_add) > 0 and value_add[0] not in values_base:
-                values_base.extend(value_add)
+        if len(value_add) > 0 and value_add[0] not in values_base:
+            values_base.extend(value_add)
+
+            if isinstance(values_base[0], dict):
                 new_values = sorted(values_base, key=lambda v: v["name"])
             else:
-                new_values = values_base
-        if isinstance(values_base, str):
-            temp_list = [
-                element for element in values_base.split(", ") if element
-            ]
-            temp_list.extend(value_add)
-            new_values = ", ".join(sorted(list(set(temp_list))))
+                new_values = sorted(values_base)
+
+        else:
+            new_values = values_base
+
         return new_values
