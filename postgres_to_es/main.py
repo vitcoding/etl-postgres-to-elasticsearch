@@ -11,6 +11,7 @@ from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
 from data_state import JsonFileStorage, State
 from datetime import datetime, timezone
+from time import sleep
 
 
 # typing to change
@@ -25,13 +26,8 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
 
     storage = JsonFileStorage("./data/data_state.json")
     state = State(storage)
-    # update_time = datetime(2021, 1, 1, 20, 0, 0)
-    # update_time = state.set_state(
-    #     "last_update", str(datetime(2021, 1, 1, 20, 0, 0))
-    # )
 
     update_time = state.get_state("last_update")
-    ### need check
     new_update_time = datetime.now(timezone.utc)
 
     data = postgres_extractor.extract_data(update_time)
@@ -53,23 +49,24 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
 
 
 if __name__ == "__main__":
+    while True:
+        with closing(
+            psycopg.connect(
+                **dsl, row_factory=dict_row, cursor_factory=ClientCursor
+            )
+        ) as pg_connection:
+            logger.info("Программа запущена\n")
+            start_time = perf_counter()
 
-    with closing(
-        psycopg.connect(
-            **dsl, row_factory=dict_row, cursor_factory=ClientCursor
-        )
-    ) as pg_connection:
-        logger.info("Программа запущена\n")
-        start_time = perf_counter()
+            transfer = load_from_postgres(pg_connection)
 
-        transfer = load_from_postgres(pg_connection)
+            end_time = perf_counter()
+            result = (
+                "В ходе переноса данных возникли ошибки.",
+                "🎉 Данные успешно перенесены !!!",
+            )[transfer]
+            logger.info(result)
 
-        end_time = perf_counter()
-        result = (
-            "В ходе переноса данных возникли ошибки.",
-            "🎉 Данные успешно перенесены !!!",
-        )[transfer]
-        logger.info(result)
-
-    execute_time = end_time - start_time
-    logger.info("\nВремя выполнения программы: %s", execute_time)
+        execute_time = end_time - start_time
+        logger.info("\nВремя выполнения программы: %s", execute_time)
+        sleep(10)
