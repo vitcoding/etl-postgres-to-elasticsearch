@@ -22,42 +22,38 @@ class PostgresExtractor:
         self.batch_size = batch_size
         self.errors = 0
 
-    @staticmethod
-    def get_query():
-        date = datetime(2021, 1, 1, 20, 0, 0)
-        print(date)
-        # 2021-06-16 20:14:09.221
+    def get_query(self):
 
-        all_films_updates = (
-            f"SELECT id FROM content.film_work "
-            f"WHERE modified > '{str(date)}';"
-        )
-        all_persons_updates = (
-            f"SELECT fw.id FROM content.film_work fw "
-            f"LEFT JOIN content.person_film_work pfw "
-            f"ON pfw.film_work_id = fw.id "
-            f"LEFT JOIN content.person p ON p.id = pfw.person_id "
-            f"WHERE p.modified > '{str(date)}';"
-        )
+        if self.update_time is None:
+            all_films = "SELECT id FROM content.film_work "
+            query_list = [all_films]
 
-        all_genres_updates = (
-            f"SELECT fw.id FROM content.film_work fw "
-            f"LEFT JOIN content.genre_film_work gfw "
-            f"ON gfw.film_work_id = fw.id "
-            f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
-            f"WHERE g.modified > '{str(date)}';"
-        )
+        else:
+            all_films_updates = (
+                f"SELECT id FROM content.film_work "
+                f"WHERE modified > '{str(self.update_time)}';"
+            )
+            all_persons_updates = (
+                f"SELECT fw.id FROM content.film_work fw "
+                f"LEFT JOIN content.person_film_work pfw "
+                f"ON pfw.film_work_id = fw.id "
+                f"LEFT JOIN content.person p ON p.id = pfw.person_id "
+                f"WHERE p.modified > '{str(self.update_time)}';"
+            )
 
-        query = all_genres_updates
-        print(f"\n{query}\n")
-
-        query_list = [
-            all_films_updates,
-            all_persons_updates,
-            all_genres_updates,
-        ]
-        # return query_list
-        return query
+            all_genres_updates = (
+                f"SELECT fw.id FROM content.film_work fw "
+                f"LEFT JOIN content.genre_film_work gfw "
+                f"ON gfw.film_work_id = fw.id "
+                f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
+                f"WHERE g.modified > '{str(self.update_time)}';"
+            )
+            query_list = [
+                all_films_updates,
+                all_persons_updates,
+                all_genres_updates,
+            ]
+        return query_list
 
     def get_movies_ids(self):
         self.pg_connection.row_factory = dict_row
@@ -68,25 +64,21 @@ class PostgresExtractor:
             logger.debug("Запущено получение ids")
 
             # query = "SELECT id FROM content.film_work;"
-            # for query in self.get_query():
-            query = self.get_query()
-
-            try:
-                pg_cursor.execute(query)
-            # except (sqlite3.OperationalError,) as err:
-            except Exception as err:
-                logger.error(
-                    "Ошибка %s при чтении данных: \n'%s'",
-                    type(err),
-                    err,
-                )
-                self.errors += 1
-
-            logger.debug("Сформирован SQL запрос:\n'%s'", query)
-
-            while ids_batch := pg_cursor.fetchmany(self.batch_size):
+            # query = self.get_query()
+            ids_set = set()
+            for query in self.get_query():
                 try:
-                    yield ids_batch
+                    pg_cursor.execute(query)
+                # except (sqlite3.OperationalError,) as err:
+                except Exception as err:
+                    logger.error(
+                        "Ошибка %s при чтении данных: \n'%s'",
+                        type(err),
+                        err,
+                    )
+                    self.errors += 1
+                try:
+                    ids = pg_cursor.fetchall()
                 # except (TypeError,) as err:
                 except Exception as err:
                     logger.error(
@@ -96,17 +88,38 @@ class PostgresExtractor:
                     )
                     # self.errors += 1
 
+                ids = set(list(id.values())[0] for id in ids)
+                ids_set |= ids
+                # ids = set(list(ids.values()))
+                # ids_list.append(ids)
+                # logger.info("\nids: \n%s\n", ids)
+                # logger.info("\nlen(ids): \n%s\n", len(ids))
+            logger.info("\nids_set: \n%s\n", ids_set)
+            logger.info("\nlen(ids_set): \n%s\n", len(ids_set))
+
+            logger.debug("Сформирован SQL запрос:\n'%s'", query)
+
+            ids_list = list(ids_set)
+
+            for i in range(0, len(ids_list), self.batch_size):
+                batch = ids_list[i : i + self.batch_size]
+                logger.info("\nbatch: \n%s\n", batch)
+                ###
+                yield batch
+
     def extract_data(
         self,
+        update_time,
     ) -> Generator[tuple[str, list[dict_row]], None, None] | bool:
         """Метод получения данных из SQLite"""
 
-        for ids in self.get_movies_ids():
-            logger.debug("IDs: \n%s\n", ids)
-            # print(len(ids))
+        self.update_time = update_time
 
-            # query_ids_list = [repr(list(id.values())[0]) for id in ids[:30]]
-            query_ids_list = [repr(list(id.values())[0]) for id in ids]
+        for ids in self.get_movies_ids():
+            logger.debug("\nIDs: \n%s\n", ids)
+            logger.debug("\nlen(IDs): \n%s\n", len(ids))
+
+            query_ids_list = [repr(id) for id in ids]
             logger.debug("IDs list for query: \n%s\n", query_ids_list)
 
             query_ids = ", ".join(query_ids_list)
@@ -151,7 +164,6 @@ class PostgresExtractor:
 
                 logger.debug("Сформирован SQL запрос:\n'%s'", query)
 
-                # while batch := pg_cursor.fetchmany(self.batch_size):
                 batch = pg_cursor.fetchall()
                 try:
                     yield batch

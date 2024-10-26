@@ -48,7 +48,8 @@ class TransformData:
         for key, value in row_dict.items():
             if key.startswith("g_"):
                 movie["genres"] = []
-                movie["genres"].append(value)
+                if value is not None:
+                    movie["genres"].append(value)
             elif key.startswith("p_"):
                 role_dict[key] = value
             else:

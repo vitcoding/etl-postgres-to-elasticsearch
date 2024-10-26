@@ -70,3 +70,4 @@ class ElasticsearchLoader:
             logger.info("\nLoad counter:  %s\n", counter)
         # sleep(5)
         # logger.info("Sleep...\n\n")
+        return True

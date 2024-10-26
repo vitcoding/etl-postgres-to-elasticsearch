@@ -6,3 +6,5 @@ __pycache__/
 _temp/
 temp/
 *for_example
+data_state.json
+

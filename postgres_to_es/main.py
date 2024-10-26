@@ -9,6 +9,8 @@ from psycopg.rows import dict_row
 from config import dsl, logger
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
+from data_state import JsonFileStorage, State
+from datetime import datetime, timezone
 
 
 # typing to change
@@ -21,24 +23,22 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
 
     counter = 0
 
-    data = postgres_extractor.extract_data()
-    elasticsearch_loader.load_data(data)
+    storage = JsonFileStorage("./data/data_state.json")
+    state = State(storage)
+    # update_time = datetime(2021, 1, 1, 20, 0, 0)
+    # update_time = state.set_state(
+    #     "last_update", str(datetime(2021, 1, 1, 20, 0, 0))
+    # )
 
-    # # for debug only
-    # ###
-    # for line in data:
-    #     # logger.info("%s\n", line)
-    #     logger.info("fw: \n%s\ntype(fw): \n%s", line[0], type(line[0]))
-    #     # for key in line[0]:
-    #     #     print(key)
-    #     # print()
-    #     counter += 1
+    update_time = state.get_state("last_update")
+    ### need check
+    new_update_time = datetime.now(timezone.utc)
 
-    # logger.info("Counter: %s\n\n", counter)
-    # ###
+    data = postgres_extractor.extract_data(update_time)
+    result = elasticsearch_loader.load_data(data)
 
-    # es_loader = ElasticsearchLoader()
-    # es_loader.load_data()
+    if result is True:
+        update_time = state.set_state("last_update", str(new_update_time))
 
     # errors_total += postgres_getter.errors + es_saver.errors
     # logger.debug("Количество ошибок 'sqlite_loader': %s", postgres_getter.errors)
@@ -64,20 +64,12 @@ if __name__ == "__main__":
 
         transfer = load_from_postgres(pg_connection)
 
-        start_tests_time = perf_counter()
-
         end_time = perf_counter()
         result = (
             "В ходе переноса данных возникли ошибки.",
             "🎉 Данные успешно перенесены !!!",
         )[transfer]
         logger.info(result)
-
-    transfer_time = start_tests_time - start_time
-    logger.debug("\nВремя выполнения переноса данных: %s", transfer_time)
-
-    tests_time = end_time - start_tests_time
-    logger.debug("\nВремя выполнения тестов: %s", tests_time)
 
     execute_time = end_time - start_time
     logger.info("\nВремя выполнения программы: %s", execute_time)
