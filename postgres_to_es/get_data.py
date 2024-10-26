@@ -1,4 +1,5 @@
 from contextlib import closing
+from datetime import datetime
 from typing import Generator
 
 import psycopg
@@ -21,6 +22,43 @@ class PostgresExtractor:
         self.batch_size = batch_size
         self.errors = 0
 
+    @staticmethod
+    def get_query():
+        date = datetime(2021, 1, 1, 20, 0, 0)
+        print(date)
+        # 2021-06-16 20:14:09.221
+
+        all_films_updates = (
+            f"SELECT id FROM content.film_work "
+            f"WHERE modified > '{str(date)}';"
+        )
+        all_persons_updates = (
+            f"SELECT fw.id FROM content.film_work fw "
+            f"LEFT JOIN content.person_film_work pfw "
+            f"ON pfw.film_work_id = fw.id "
+            f"LEFT JOIN content.person p ON p.id = pfw.person_id "
+            f"WHERE p.modified > '{str(date)}';"
+        )
+
+        all_genres_updates = (
+            f"SELECT fw.id FROM content.film_work fw "
+            f"LEFT JOIN content.genre_film_work gfw "
+            f"ON gfw.film_work_id = fw.id "
+            f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
+            f"WHERE g.modified > '{str(date)}';"
+        )
+
+        query = all_genres_updates
+        print(f"\n{query}\n")
+
+        query_list = [
+            all_films_updates,
+            all_persons_updates,
+            all_genres_updates,
+        ]
+        # return query_list
+        return query
+
     def get_movies_ids(self):
         self.pg_connection.row_factory = dict_row
 
@@ -29,7 +67,10 @@ class PostgresExtractor:
         ) as pg_cursor:
             logger.debug("Запущено получение ids")
 
-            query = f"SELECT " f"id " f"FROM content.film_work;"
+            # query = "SELECT id FROM content.film_work;"
+            # for query in self.get_query():
+            query = self.get_query()
+
             try:
                 pg_cursor.execute(query)
             # except (sqlite3.OperationalError,) as err:
@@ -89,9 +130,11 @@ class PostgresExtractor:
                     f"p.full_name as p_name, "
                     f"pfw.role as p_role "
                     f"FROM content.film_work fw "
-                    f"LEFT JOIN content.person_film_work pfw ON pfw.film_work_id = fw.id "
+                    f"LEFT JOIN content.person_film_work pfw "
+                    f"ON pfw.film_work_id = fw.id "
                     f"LEFT JOIN content.person p ON p.id = pfw.person_id "
-                    f"LEFT JOIN content.genre_film_work gfw ON gfw.film_work_id = fw.id "
+                    f"LEFT JOIN content.genre_film_work gfw "
+                    f"ON gfw.film_work_id = fw.id "
                     f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
                     f"WHERE fw.id IN ({query_ids});"
                 )
