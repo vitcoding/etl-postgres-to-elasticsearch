@@ -1,5 +1,3 @@
-version: '3'
-
 name: movie-theatre
 
 services:
@@ -8,10 +6,6 @@ services:
     image: postgres:16
     env_file:
       - ./.env
-    # environment:
-    #   - POSTGRES_USER=${POSTGRES_USER}
-    #   - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-    #   - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - movies-database:/var/lib/postgresql/data
       - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
@@ -27,29 +21,26 @@ services:
       - discovery.type=single-node
       - xpack.security.enabled=false
       - "ES_JAVA_OPTS=-Xms2048m -Xmx2048m"
-      # volumes:
-      #   - esdata:/usr/share/elasticsearch/data
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
     restart: always
 
   etl:
     build: ./postgres_to_es
-    # command: python main.py
-    # volumes:
-    #   - static-theatre:/opt/app/static
-    # expose:
-    #   - "5000"
     env_file:
       - ./postgres_to_es/.env
-    # environment:
-    #   SQL_HOST: movies-db
-    #   ELASTICSEARCH_HOST: elasticsearch
+    volumes:
+      - etl-data:/opt/app/data
     depends_on:
       - movies-db
+      - elasticsearch
     # restart: always
 
 volumes:
   movies-database:
-    # esdata:
+  es-data:
+  etl-data:
+
 
