@@ -7,18 +7,16 @@ class TransformData:
         pass
 
     def transform_batch(self, batch):
+        """Метод трансформации партии данных."""
+
         transformed_batch = {}
 
         for row in batch:
-            logger.debug("\nДанные для трансформации: \n%s\n", row)
+            logger.debug("\nИзвлеченные данные: \n%s\n", row)
             transformed_row = self.transform_row(row)
             row_id = transformed_row["id"]
 
             if row_id not in transformed_batch:
-
-                logger.debug(
-                    "\nДанные после трансформации: \n%s\n", transformed_row
-                )
 
                 transformed_batch[row_id] = transformed_row
                 continue
@@ -31,8 +29,10 @@ class TransformData:
         return transformed_data
 
     def transform_row(self, row):
+        """Основной метод трансформации данных."""
+
         row_dict = dict(FilmworkExtract(**row))
-        logger.debug("\nrow_dict: \n%s\n", row_dict)
+        logger.debug("\nДанные до трансформации: \n%s\n", row_dict)
 
         movie, role_dict = {}, {}
         for key, value in row_dict.items():
@@ -62,12 +62,14 @@ class TransformData:
                 movie[f"{role}s"].append(self.transform_role_dict(role_dict))
                 movie[f"{role}s_names"].append(role_dict["p_name"])
 
-        logger.debug("\nmovie: \n%s\n", movie)
+        logger.debug("\nДанные после трансформации: \n%s\n", movie)
         movie = dict(FilmworkTransform(**movie))
         return movie
 
     @staticmethod
     def transform_role_dict(role_dict):
+        """Метод сборки словаря для роли."""
+
         new_role_dict = {}
         new_role_dict["id"] = role_dict["p_id"]
         new_role_dict["name"] = role_dict["p_name"]
@@ -75,9 +77,7 @@ class TransformData:
 
     @staticmethod
     def aggregte_movie_dict(movie, transformed_row):
-        logger.debug(
-            "\nmovie: \n%s \n\ntransformed_row: \n%s\n", movie, transformed_row
-        )
+        """Метод сборки итогового словаря для загрузки."""
 
         for key in (
             "genres",
@@ -97,7 +97,9 @@ class TransformData:
         return movie
 
     @staticmethod
-    def add_values(values_base: list | str, value_add: list) -> dict:
+    def add_values(values_base: list, value_add: list) -> dict:
+        """Метод добавления значений в дополнительные списки."""
+
         if len(value_add) > 0 and value_add[0] not in values_base:
             values_base.extend(value_add)
 

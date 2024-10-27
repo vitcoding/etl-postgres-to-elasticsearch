@@ -3,6 +3,8 @@ import json
 import os
 from typing import Any, Dict
 
+from config import logger
+
 
 class BaseStorage(abc.ABC):
     """Абстрактное хранилище состояния.
@@ -15,12 +17,12 @@ class BaseStorage(abc.ABC):
 
     @abc.abstractmethod
     def save_state(self, state: Dict[str, Any]) -> None:
-        """Сохранить состояние в хранилище."""
+        """Абстарктый метод сохранения состояния в хранилище."""
         pass
 
     @abc.abstractmethod
     def retrieve_state(self) -> Dict[str, Any]:
-        """Получить состояние из хранилища."""
+        """Абстрактный метод получения состояния из хранилища."""
         pass
 
 
@@ -34,12 +36,14 @@ class JsonFileStorage(BaseStorage):
         self.file_path = file_path
 
     def save_state(self, state: Dict[str, Any]) -> None:
-        """Сохранить состояние в хранилище."""
+        """Метод сохранения состояния в хранилище."""
+
         with open(self.file_path, mode="w", encoding="utf-8") as json_file:
             json.dump(state, json_file, indent=2)
 
     def retrieve_state(self) -> Dict[str, Any]:
-        """Получить состояние из хранилища."""
+        """Метод получения состояния из хранилища."""
+
         dir_path = "/".join((self.file_path).split("/")[:-1])
         if not os.path.exists(dir_path):
             os.makedirs(dir_path)
@@ -47,7 +51,7 @@ class JsonFileStorage(BaseStorage):
             with open(self.file_path, mode="r", encoding="utf-8") as json_file:
                 json_data = json.load(json_file)
                 return json_data
-        except:
+        except Exception as err:
             return {}
 
 
@@ -58,13 +62,15 @@ class State:
         self.storage = storage
 
     def set_state(self, key: str, value: Any) -> None:
-        """Установить состояние для определённого ключа."""
+        """Метод установки состояния для определённого ключа."""
+
         data = self.storage.retrieve_state()
         data[key] = value
         self.storage.save_state(data)
 
     def get_state(self, key: str) -> Any:
-        """Получить состояние по определённому ключу."""
+        """Метод получения состояния по определённому ключу."""
+
         data = self.storage.retrieve_state()
         state = data.get(key, None)
         return state

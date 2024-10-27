@@ -1,13 +1,10 @@
 from contextlib import closing
-from datetime import datetime
 from typing import Generator
 
 import psycopg
 from psycopg.rows import dict_row
 
 from config import BATCH_SIZE, DB_SCHEMA, logger
-from dataclasses_ import FilmworkExtract
-from validate import validate_data
 
 
 class PostgresExtractor:
@@ -20,9 +17,9 @@ class PostgresExtractor:
         self.pg_connection = pg_connection
         self.schema = schema
         self.batch_size = batch_size
-        self.errors = 0
 
-    def get_query(self):
+    def get_query(self) -> list[str]:
+        """Метод получения запроса к БД на список ИД фильмов для извлечения."""
 
         if self.update_time is None:
             all_films = "SELECT id FROM content.film_work; "
@@ -55,82 +52,65 @@ class PostgresExtractor:
             ]
         return query_list
 
-    def get_movies_ids(self):
+    def get_movies_ids(self) -> Generator[list[str], None, None]:
+        """Метод получения ИД фильмов с обновлениями."""
         self.pg_connection.row_factory = dict_row
 
         with closing(
             self.pg_connection.cursor(row_factory=dict_row)
         ) as pg_cursor:
-            logger.debug("Запущено получение ids")
+            logger.debug("\nЗапущено получение ИД фильмов с обновлениями.\n")
 
-            # query = "SELECT id FROM content.film_work;"
-            # query = self.get_query()
             ids_set = set()
             for query in self.get_query():
-                try:
-                    pg_cursor.execute(query)
-                # except (sqlite3.OperationalError,) as err:
-                except Exception as err:
-                    logger.error(
-                        "Ошибка %s при чтении данных: \n'%s'",
-                        type(err),
-                        err,
-                    )
-                    self.errors += 1
-                try:
-                    ids = pg_cursor.fetchall()
-                # except (TypeError,) as err:
-                except Exception as err:
-                    logger.error(
-                        "Ошибка %s при получении ID фильмов: \n'%s'",
-                        type(err),
-                        err,
-                    )
-                    # self.errors += 1
+
+                pg_cursor.execute(query)
+                ids = pg_cursor.fetchall()
+
+                logger.debug("\nСформирован SQL запрос:\n'%s'\n", query)
 
                 ids = set(list(id.values())[0] for id in ids)
                 ids_set |= ids
-                # ids = set(list(ids.values()))
-                # ids_list.append(ids)
-                # logger.info("\nids: \n%s\n", ids)
-                # logger.info("\nlen(ids): \n%s\n", len(ids))
-            logger.info("\nids_set: \n%s\n", ids_set)
-            logger.info("\nlen(ids_set): \n%s\n", len(ids_set))
 
-            logger.debug("Сформирован SQL запрос:\n'%s'", query)
+            logger.info(
+                "\nИзвлечено ИД фильмов для загрузки: \n%s\n", len(ids_set)
+            )
 
             ids_list = list(ids_set)
 
             for i in range(0, len(ids_list), self.batch_size):
                 batch = ids_list[i : i + self.batch_size]
-                logger.info("\nbatch: \n%s\n", batch)
-                ###
+                logger.debug("\nПартия для извлечения (ИД): \n%s\n", batch)
                 yield batch
 
     def extract_data(
         self,
-        update_time,
-    ) -> Generator[tuple[str, list[dict_row]], None, None] | bool:
-        """Метод получения данных из SQLite"""
+        update_time: str,
+    ) -> Generator[list[dict], None, None]:
+        """Основной метод извлечения данных из PostgreSQL."""
 
         self.update_time = update_time
 
         for ids in self.get_movies_ids():
-            logger.debug("\nIDs: \n%s\n", ids)
-            logger.debug("\nlen(IDs): \n%s\n", len(ids))
 
             query_ids_list = [repr(id) for id in ids]
-            logger.debug("IDs list for query: \n%s\n", query_ids_list)
+
+            logger.debug(
+                "\nПартия для извлечения (ИД): \n%s\n", query_ids_list
+            )
+            logger.debug(
+                "\nКоличество фильмов для извлечения: \n%s\n",
+                len(query_ids_list),
+            )
 
             query_ids = ", ".join(query_ids_list)
-            logger.info("IDs for query: \n%s\n", query_ids)
 
             self.pg_connection.row_factory = dict_row
 
             with closing(
                 self.pg_connection.cursor(row_factory=dict_row)
             ) as pg_cursor:
-                logger.debug("Запущено получение данных")
+                logger.info("\nЗапущено извлечение данных\n")
 
                 query = (
                     f"SELECT "
@@ -151,27 +131,9 @@ class PostgresExtractor:
                     f"LEFT JOIN content.genre g ON g.id = gfw.genre_id "
                     f"WHERE fw.id IN ({query_ids});"
                 )
-                try:
-                    pg_cursor.execute(query)
-                # except (sqlite3.OperationalError,) as err:
-                except Exception as err:
-                    logger.error(
-                        "Ошибка %s при чтении данных: \n'%s'",
-                        type(err),
-                        err,
-                    )
-                    self.errors += 1
+                pg_cursor.execute(query)
 
-                logger.debug("Сформирован SQL запрос:\n'%s'", query)
+                logger.debug("Сформирован SQL запрос:\n'%s'\n", query)
 
                 batch = pg_cursor.fetchall()
-                try:
-                    yield batch
-                # except (TypeError,) as err:
-                except Exception as err:
-                    logger.error(
-                        "Ошибка %s при получении данных: \n'%s'",
-                        type(err),
-                        err,
-                    )
-                    self.errors += 1
+                yield batch

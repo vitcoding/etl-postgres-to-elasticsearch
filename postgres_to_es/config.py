@@ -3,10 +3,6 @@ import os
 
 from dotenv import load_dotenv
 
-from dataclasses_ import FilmworkExtract
-
-# , Genre, GenreFilmwork, Person, PersonFilmwork
-
 load_dotenv()
 
 DSL = {
@@ -21,8 +17,6 @@ ES_HOST = os.environ.get("ELASTICSEARCH_HOST")
 ES_PORT = os.environ.get("ELASTICSEARCH_PORT")
 
 TABLES = (
-    # "error_table",
-    ###
     "film_work",
     "genre",
     "person",
@@ -30,22 +24,13 @@ TABLES = (
     "person_film_work",
 )
 
-# TABLE_DATA = {
-#     "film_work": Filmwork,
-#     "genre": Genre,
-#     "person": Person,
-#     "genre_film_work": GenreFilmwork,
-#     "person_film_work": PersonFilmwork,
-# }
-
 DB_SCHEMA = {
     "postgres": "content.",
-    "sqlite": "",
-    ###
-    # "sqlite": "user.",
 }
 
 BATCH_SIZE = 200
+
+SLEEP_TIME = 10
 
 format_log = (
     "#%(levelname)-8s [%(asctime)s] - %(filename)s:"
@@ -66,5 +51,3 @@ logger = logging.getLogger(__name__)
 
 # logger.addHandler(file_handler)
 # logger.setLevel(logging.DEBUG)
-
-logger.info("It's config")

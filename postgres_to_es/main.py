@@ -2,79 +2,117 @@ from contextlib import closing
 from datetime import datetime, timezone
 from time import perf_counter, sleep
 
+import elastic_transport
 import psycopg
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
-from config import DSL, logger
+from config import DSL, SLEEP_TIME, logger
 from data_state import JsonFileStorage, State
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
 
 
-def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
-    """Основной метод загрузки данных из Postgres в ElasticSearch"""
+def load_from_postgres(pg_connection: psycopg.Connection) -> int:
+    """Основная функция загрузки данных из Postgres в ElasticSearch."""
 
     postgres_extractor = PostgresExtractor(pg_connection)
     elasticsearch_loader = ElasticsearchLoader()
-    errors_total = 0
 
     storage = JsonFileStorage("./data/data_state.json")
     state = State(storage)
 
     update_time = state.get_state("last_update")
+    if update_time is not None:
+        logger.info(
+            "\nПоследнее время обновления: %s.\n"
+            "Будут загружены данные, добавленные после указанного времени.\n",
+            update_time,
+        )
+    else:
+        logger.info(
+            "\nПоследнее время обновления отсутствует.\n"
+            "\nБудут загружены все данные.\n"
+        )
+
     new_update_time = datetime.now(timezone.utc)
 
     data = postgres_extractor.extract_data(update_time)
     result = elasticsearch_loader.load_data(data)
 
-    if result is True:
-        update_time = state.set_state("last_update", str(new_update_time))
+    if result >= 0:
+        state.set_state("last_update", str(new_update_time))
+        logger.info(
+            "\nПоследнее время обновления изменено: %s.\n",
+            new_update_time,
+        )
 
-    # errors_total += postgres_getter.errors + es_saver.errors
-    # logger.debug("Количество ошибок 'sqlite_loader': %s", postgres_getter.errors)
-    # logger.debug(
-    #     "Количество ошибок 'postgres_saver': %s\n", es_saver.errors
-    # )
-    # logger.info("Всего ошибок: %s\n", errors_total)
-
-    if errors_total > 0:
-        return False
-    return True
+    return result
 
 
 def main():
+    """Основная функция запуска программы."""
+
     with closing(
         psycopg.connect(
             **DSL, row_factory=dict_row, cursor_factory=ClientCursor
         )
     ) as pg_connection:
-        logger.info("Программа запущена\n")
+        logger.info("\nЦикл программы запущен\n")
         start_time = perf_counter()
 
         transfer = load_from_postgres(pg_connection)
 
         end_time = perf_counter()
-        # result = (
-        #     "В ходе переноса данных возникли ошибки.",
-        #     "🎉 Данные успешно перенесены !!!",
-        # )[transfer]
-        # logger.info(result)
 
     execute_time = end_time - start_time
-    logger.info("\n🎉 Время выполнения цикла программы: \n%s\n", execute_time)
+    if transfer:
+        logger.info(
+            "\n🎉 Цикл завершен. Всего загружено данных за цикл: %s."
+            "\nВремя выполнения: %s\n\n\n",
+            transfer,
+            execute_time,
+        )
+    else:
+        logger.info(
+            "\nОбновленные данные для загрузки отсутствуют."
+            "\nЦикл завершен. Время выполнения: %s\n\n\n",
+            execute_time,
+        )
     sleep(10)
 
 
 if __name__ == "__main__":
     counter = 0
     while True:
-        main()
-        # try:
-        #     main()
-        # except Exception as err:
-        #     counter += 1
-        #     logger.info("\nОшибка: \n%s", err)
-        #     if counter > 10:
-        #         break
-        #     sleep(3)
+        try:
+            main()
+            counter = 0
+            sleep_time = SLEEP_TIME
+        except (
+            psycopg.OperationalError,
+            elastic_transport._exceptions.ConnectionError,
+        ) as err:
+            counter += 1
+            logger.error(
+                "Ошибка %s при исполнении цикла программы: \n'%s'.\n",
+                type(err),
+                err,
+            )
+
+            sleep_time = counter * 0.5 + 1
+            if counter > 10:
+                logger.warning(
+                    "\nСовершено 10 попыток подключения с ошибками.\n"
+                    "\nПрограмма завершена.\n"
+                )
+                break
+            sleep(sleep_time)
+        except Exception as err:
+            logger.warning(
+                "\nПроизошла непредвиденная ошибка %s: \n'%s'.\n"
+                "\nПрограмма завершена.\n\n",
+                type(err),
+                err,
+            )
+            break
