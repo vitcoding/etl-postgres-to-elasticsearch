@@ -25,7 +25,7 @@ class PostgresExtractor:
     def get_query(self):
 
         if self.update_time is None:
-            all_films = "SELECT id FROM content.film_work "
+            all_films = "SELECT id FROM content.film_work; "
             query_list = [all_films]
 
         else:

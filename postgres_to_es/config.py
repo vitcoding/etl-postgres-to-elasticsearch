@@ -8,13 +8,17 @@ from dataclasses_ import FilmworkExtract
 # , Genre, GenreFilmwork, Person, PersonFilmwork
 
 load_dotenv()
-dsl = {
-    "dbname": os.environ.get("DB_NAME"),
-    "user": os.environ.get("DB_USER"),
-    "password": os.environ.get("DB_PASSWORD"),
-    "host": os.getenv("POSTGRES_HOST"),
-    "port": os.getenv("POSTGRES_PORT"),
+
+DSL = {
+    "dbname": os.environ.get("POSTGRES_NAME"),
+    "user": os.environ.get("POSTGRES_USER"),
+    "password": os.environ.get("POSTGRES_PASSWORD"),
+    "host": os.getenv("SQL_HOST"),
+    "port": os.getenv("SQL_PORT"),
 }
+
+ES_HOST = os.environ.get("ELASTICSEARCH_HOST")
+ES_PORT = os.environ.get("ELASTICSEARCH_PORT")
 
 TABLES = (
     # "error_table",
@@ -62,3 +66,5 @@ logger = logging.getLogger(__name__)
 
 # logger.addHandler(file_handler)
 # logger.setLevel(logging.DEBUG)
+
+logger.info("It's config")

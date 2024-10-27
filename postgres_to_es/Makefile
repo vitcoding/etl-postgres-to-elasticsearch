@@ -7,7 +7,7 @@ run:
 json-rm:
 	rm data/data_state.json
 
-es-movies-rm: json-rm
+es-rm: json-rm
 	curl -X DELETE http://localhost:9200/movies
 
 query_all:

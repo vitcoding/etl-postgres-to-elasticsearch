@@ -6,7 +6,7 @@ import psycopg
 from psycopg import ClientCursor
 from psycopg.rows import dict_row
 
-from config import dsl, logger
+from config import DSL, logger
 from data_state import JsonFileStorage, State
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
@@ -44,30 +44,37 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> bool:
 
 
 def main():
-    while True:
-        with closing(
-            psycopg.connect(
-                **dsl, row_factory=dict_row, cursor_factory=ClientCursor
-            )
-        ) as pg_connection:
-            logger.info("Программа запущена\n")
-            start_time = perf_counter()
-
-            transfer = load_from_postgres(pg_connection)
-
-            end_time = perf_counter()
-            # result = (
-            #     "В ходе переноса данных возникли ошибки.",
-            #     "🎉 Данные успешно перенесены !!!",
-            # )[transfer]
-            # logger.info(result)
-
-        execute_time = end_time - start_time
-        logger.info(
-            "\n🎉 Время выполнения цикла программы: \n%s\n", execute_time
+    with closing(
+        psycopg.connect(
+            **DSL, row_factory=dict_row, cursor_factory=ClientCursor
         )
-        sleep(10)
+    ) as pg_connection:
+        logger.info("Программа запущена\n")
+        start_time = perf_counter()
+
+        transfer = load_from_postgres(pg_connection)
+
+        end_time = perf_counter()
+        # result = (
+        #     "В ходе переноса данных возникли ошибки.",
+        #     "🎉 Данные успешно перенесены !!!",
+        # )[transfer]
+        # logger.info(result)
+
+    execute_time = end_time - start_time
+    logger.info("\n🎉 Время выполнения цикла программы: \n%s\n", execute_time)
+    sleep(10)
 
 
 if __name__ == "__main__":
-    main()
+    counter = 0
+    while True:
+        main()
+        # try:
+        #     main()
+        # except Exception as err:
+        #     counter += 1
+        #     logger.info("\nОшибка: \n%s", err)
+        #     if counter > 10:
+        #         break
+        #     sleep(3)

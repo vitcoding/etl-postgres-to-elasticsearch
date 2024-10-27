@@ -4,21 +4,21 @@ from datetime import datetime, timezone
 from time import sleep
 from typing import Generator
 
-from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
-
 from config import DB_SCHEMA, logger
 from dataclasses_ import FilmworkExtract
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 from es_schema import es_settings
 from transform_data import TransformData
+from config import ES_HOST, ES_PORT
 
 
 class ElasticsearchLoader:
     def init(
         self,
-        es_client=Elasticsearch("http://127.0.0.1:9200/"),
+        # es_client=Elasticsearch("http://127.0.0.1:9200/"),
     ):
-        self.es_client = es_client
+        # self.es_client = es_client
         self.counter = 0
 
     def load_data(
@@ -27,7 +27,9 @@ class ElasticsearchLoader:
     ):
         """Метод загрузки данных в ElasticSearch"""
 
-        es_client = Elasticsearch("http://127.0.0.1:9200/")
+        # es_client = Elasticsearch("http://127.0.0.1:9200/")
+        # es_client = Elasticsearch("http://elasticsearch:9200/")
+        es_client = Elasticsearch(f"http://{ES_HOST}:{ES_PORT}/")
 
         transform = TransformData()
 
