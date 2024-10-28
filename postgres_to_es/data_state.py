@@ -3,8 +3,6 @@ import json
 import os
 from typing import Any, Dict
 
-from config import logger
-
 
 class BaseStorage(abc.ABC):
     """Абстрактное хранилище состояния.
@@ -51,7 +49,7 @@ class JsonFileStorage(BaseStorage):
             with open(self.file_path, mode="r", encoding="utf-8") as json_file:
                 json_data = json.load(json_file)
                 return json_data
-        except Exception as err:
+        except Exception:
             return {}
 
 
