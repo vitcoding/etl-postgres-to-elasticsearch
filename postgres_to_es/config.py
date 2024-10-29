@@ -46,7 +46,7 @@ class SettingsDev(Settings):
 
 def get_settings() -> BaseSettings:
     environment = os.environ.get("APP_ENV", "docker")
-    logger.info("\nОкружение: \n'%s'\n", environment)
+    logger.debug("\nОкружение: '%s'\n", environment)
     if environment == "docker":
         return SettingsDocker()
     if environment == "dev":

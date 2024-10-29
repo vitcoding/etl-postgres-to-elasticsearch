@@ -5,7 +5,7 @@ services:
   movies-db:
     image: postgres:16
     env_file:
-      - ./doc.env
+      - ./.env
     volumes:
       - movies-database:/var/lib/postgresql/data
       - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
@@ -30,13 +30,12 @@ services:
   etl:
     build: ./postgres_to_es
     env_file:
-      - ./postgres_to_es/.env
+      - ./postgres_to_es/doc.env
     volumes:
       - etl-data:/opt/app/data
     depends_on:
       - movies-db
       - elasticsearch
-    # restart: always
 
 volumes:
   movies-database:

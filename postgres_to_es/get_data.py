@@ -2,8 +2,9 @@ from contextlib import closing
 from typing import Generator
 
 import psycopg
-from config import BATCH_SIZE, DB_SCHEMA, logger
 from psycopg.rows import dict_row
+
+from config import BATCH_SIZE, DB_SCHEMA, logger
 
 
 class PostgresExtractor:
@@ -78,7 +79,7 @@ class PostgresExtractor:
             ids_list = list(ids_set)
 
             for i in range(0, len(ids_list), self.batch_size):
-                batch = ids_list[i:i + self.batch_size]
+                batch = ids_list[i : i + self.batch_size]
                 logger.debug("\nПартия для извлечения (ИД): \n%s\n", batch)
                 yield batch
 

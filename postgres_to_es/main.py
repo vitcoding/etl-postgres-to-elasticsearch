@@ -2,15 +2,14 @@ from contextlib import closing
 from datetime import datetime, timezone
 from time import perf_counter, sleep
 
-import elastic_transport
 import psycopg
-from psycopg import ClientCursor
-from psycopg.rows import dict_row
-
+from backoff import backoff
 from config import DSL, SLEEP_TIME, logger
 from data_state import JsonFileStorage, State
 from get_data import PostgresExtractor
 from load_data import ElasticsearchLoader
+from psycopg import ClientCursor
+from psycopg.rows import dict_row
 
 
 def load_from_postgres(pg_connection: psycopg.Connection) -> int:
@@ -50,7 +49,11 @@ def load_from_postgres(pg_connection: psycopg.Connection) -> int:
     return result
 
 
-def main():
+backoff_wrapper = backoff()
+
+
+@backoff_wrapper
+def main() -> None:
     """Основная функция запуска программы."""
 
     with closing(
@@ -66,6 +69,7 @@ def main():
         end_time = perf_counter()
 
     execute_time = end_time - start_time
+
     if transfer:
         logger.info(
             "\n🎉 Цикл завершен. Всего загружено данных за цикл: %s."
@@ -79,40 +83,10 @@ def main():
             "\nЦикл завершен. Время выполнения: %s\n\n\n",
             execute_time,
         )
-    sleep(10)
+
+    sleep(SLEEP_TIME)
 
 
 if __name__ == "__main__":
-    counter = 0
-    while True:
-        try:
-            main()
-            counter = 0
-            sleep_time = SLEEP_TIME
-        except (
-            psycopg.OperationalError,
-            elastic_transport._exceptions.ConnectionError,
-        ) as err:
-            counter += 1
-            logger.error(
-                "Ошибка %s при исполнении цикла программы: \n'%s'.\n",
-                type(err),
-                err,
-            )
 
-            sleep_time = counter * 0.5 + 1
-            if counter > 10:
-                logger.warning(
-                    "\nСовершено 10 попыток подключения с ошибками.\n"
-                    "\nПрограмма завершена.\n"
-                )
-                break
-            sleep(sleep_time)
-        except Exception as err:
-            logger.warning(
-                "\nПроизошла непредвиденная ошибка %s: \n'%s'.\n"
-                "\nПрограмма завершена.\n\n",
-                type(err),
-                err,
-            )
-            break
+    main()
