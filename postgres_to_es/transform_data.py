@@ -1,10 +1,12 @@
+from typing import Any
+
 from config import logger
 from dataclasses_ import FilmworkExtract, FilmworkTransform
 
 
 class TransformData:
 
-    def transform_batch(self, batch):
+    def transform_batch(self, batch: list[dict]) -> list[dict]:
         """Метод трансформации партии данных."""
 
         transformed_batch = {}
@@ -26,7 +28,7 @@ class TransformData:
         transformed_data = list(transformed_batch.values())
         return transformed_data
 
-    def transform_row(self, row):
+    def transform_row(self, row: dict[str, Any]) -> dict[str, Any]:
         """Основной метод трансформации данных."""
 
         row_dict = dict(FilmworkExtract(**row))
@@ -65,7 +67,7 @@ class TransformData:
         return movie
 
     @staticmethod
-    def transform_role_dict(role_dict):
+    def transform_role_dict(role_dict: dict[str, Any]) -> dict[str, Any]:
         """Метод сборки словаря для роли."""
 
         new_role_dict = {}
@@ -74,7 +76,9 @@ class TransformData:
         return new_role_dict
 
     @staticmethod
-    def aggregte_movie_dict(movie, transformed_row):
+    def aggregte_movie_dict(
+        movie: dict[str, Any], transformed_row: dict[str, Any]
+    ) -> dict[str, Any]:
         """Метод сборки итогового словаря для загрузки."""
 
         for key in (
@@ -95,7 +99,9 @@ class TransformData:
         return movie
 
     @staticmethod
-    def add_values(values_base: list, value_add: list) -> dict:
+    def add_values(
+        values_base: list[dict | str], value_add: list[dict | str]
+    ) -> list[dict | str]:
         """Метод добавления значений в дополнительные списки."""
 
         if len(value_add) > 0 and value_add[0] not in values_base:
