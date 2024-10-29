@@ -79,7 +79,7 @@ class PostgresExtractor:
             ids_list = list(ids_set)
 
             for i in range(0, len(ids_list), self.batch_size):
-                batch = ids_list[i : i + self.batch_size]
+                batch = ids_list[i:i + self.batch_size]
                 logger.debug("\nПартия для извлечения (ИД): \n%s\n", batch)
                 yield batch
 
