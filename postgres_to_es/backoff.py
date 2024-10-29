@@ -1,6 +1,6 @@
 from functools import wraps
 from time import sleep
-from typing import Any, Callable
+from typing import Callable
 
 import elastic_transport
 import psycopg
@@ -11,14 +11,14 @@ from config import logger
 def backoff(
     start_sleep_time: int | float = 0.1,
     factor: int | float = 2,
-    border_sleep_time: int | float = 3,  # 10
-    limit: int = 3,  # 10
+    border_sleep_time: int | float = 10,
+    limit: int = 10,
 ) -> Callable:
 
     def func_wrapper(func: Callable) -> Callable:
 
         @wraps(func)
-        def inner(*args, **kwargs) -> Any:
+        def inner(*args, **kwargs) -> None:
             counter = 0
             while True:
                 try:
