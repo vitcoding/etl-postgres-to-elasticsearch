@@ -9,8 +9,6 @@ from transform_data import TransformData
 
 
 class ElasticsearchLoader:
-    def init(self):
-        pass
 
     def load_data(
         self,

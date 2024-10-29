@@ -3,8 +3,6 @@ from dataclasses_ import FilmworkExtract, FilmworkTransform
 
 
 class TransformData:
-    def __init__(self):
-        pass
 
     def transform_batch(self, batch):
         """Метод трансформации партии данных."""
