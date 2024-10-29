@@ -1,8 +1,18 @@
+run_main = python main.py
+
 install:
 	pip install -r requirements.txt
 
 run:
-	python main.py
+	$(run_main)
+
+run-dev:
+	export APP_ENV=dev; \
+	$(run_main)
+
+run-doc:
+	export APP_ENV=docker; \
+	$(run_main)
 
 json-rm:
 	rm data/data_state.json

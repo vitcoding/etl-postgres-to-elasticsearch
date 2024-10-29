@@ -1,7 +1,7 @@
 __pycache__/
 .vscode/
 .venv/
-.env
+*.env
 
 _temp/
 temp/
